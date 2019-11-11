@@ -10,34 +10,40 @@ using System.Threading;
 
 namespace ConsoleApp1
 {
-    class Program
+    public class Program
     {
         public static string ftpAddress = null;
         public static string port = null;
         public static string hostname = null;
         public static string password = null;
+        public static double time = 0;
 
         static void Main(string[] args)
         {
-            //string ftpAddress = null, port = null, hostname = null, password = null;
-
             List<string> nameList = new List<string> { };
             List<int> sizeList = new List<int> { };
+            int nThreads = 1;
 
             SetFtpServerInfo();
             PrintFilesInfo(ref nameList, ref sizeList);
 
-            Console.WriteLine("\nPress Key to start downloading!");
-            Console.ReadLine();
+            Console.Write("\nSet the number of threads : ");
+            nThreads = Convert.ToInt32(Console.ReadLine());
+
+            ThreadPool.SetMinThreads(nThreads,nThreads);
+            ThreadPool.SetMaxThreads(nThreads,nThreads);
+                      
 
             foreach (string name in nameList)
-            {   
-                DownloadFile(name);
-            }
+                ThreadPool.QueueUserWorkItem(DownloadFile, name);
+                       
+
+            Console.ReadLine();
+
+            Console.WriteLine($"Time needed to download data : {time} ms");
 
             Console.ReadLine();
         }
-
 
         public static void SetFtpServerInfo() {
 
@@ -111,8 +117,9 @@ namespace ConsoleApp1
 
         }
 
-        public static void DownloadFile(string name) {
-
+        public static void DownloadFile(object objName)
+        {
+            string name = (string)objName;
             Stopwatch stopwatch = new Stopwatch();
 
             try
@@ -138,9 +145,10 @@ namespace ConsoleApp1
                                 fileStream.Write(buffer, 0, read);
                             }
                             stopwatch.Stop();
-                            Console.WriteLine($"Size {fileStream.Position} bytes \nTime {stopwatch.ElapsedMilliseconds} ms");
+                            Console.WriteLine($"File {name} \nSize {fileStream.Position} bytes \nTime {stopwatch.ElapsedMilliseconds} ms");
                             double bps = (double)fileStream.Position / ((double)stopwatch.ElapsedMilliseconds / 1000);
-                            Console.WriteLine($"Speed {Math.Round((bps / 1000 / 1000), 2)} Mbps\n");
+                            Console.WriteLine($"Speed {Math.Round((bps / 1000 / 1000), 2)} Mbps");
+                            time += (double)stopwatch.ElapsedMilliseconds;
                         }
                     }
                 }
@@ -149,7 +157,7 @@ namespace ConsoleApp1
             {
                 Console.Write(e.ToString());
             }
-
+            Console.WriteLine($"Using thread nr {Thread.CurrentThread.ManagedThreadId}\n");
 
         }
 
