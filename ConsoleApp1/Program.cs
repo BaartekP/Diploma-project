@@ -17,6 +17,10 @@ namespace ConsoleApp1
         public static string hostname = null;
         public static string password = null;
         public static double time = 0;
+        //public static List<string> times = new List<string>();
+        public static Dictionary<string, DateTime> timeDict = new Dictionary<string,DateTime>();
+        //public static Dictionary<string, double> correctTimes = new Dictionary<string, double>();
+        public static Dictionary<int, Dictionary<string, DateTime>> all = new Dictionary<int, Dictionary<string, DateTime>>();
 
         static void Main(string[] args)
         {
@@ -29,18 +33,39 @@ namespace ConsoleApp1
 
             Console.Write("\nSet the number of threads : ");
             nThreads = Convert.ToInt32(Console.ReadLine());
+            //for (int j = 1; j < 9; j++)
+            //{
+            //Console.WriteLine($"\nThreads number : {j} ");
 
-            ThreadPool.SetMinThreads(nThreads,nThreads);
-            ThreadPool.SetMaxThreads(nThreads,nThreads);
-                      
+                ThreadPool.SetMinThreads(nThreads, nThreads);
+                ThreadPool.SetMaxThreads(nThreads, nThreads);
 
-            foreach (string name in nameList)
-                ThreadPool.QueueUserWorkItem(DownloadFile, name);
-                       
+                timeDict.Clear();
 
-            Console.ReadLine();
+                timeDict.Add("Initial", DateTime.Now);
+                foreach (string name in nameList)
+                    ThreadPool.QueueUserWorkItem(DownloadFile, name);
 
-            Console.WriteLine($"Time needed to download data : {time} ms");
+
+                Console.ReadLine();
+                //using (System.IO.StreamWriter file = new System.IO.StreamWriter($@"E:/Appoutput/{j}.txt"))
+                //{
+                    
+                for (int i = 1; i < timeDict.Count; i++)
+                {
+                    double temp = timeDict.ElementAt(i).Value.TimeOfDay.TotalSeconds - timeDict.ElementAt(i - 1).Value.TimeOfDay.TotalSeconds;
+                    Console.WriteLine($"{timeDict.ElementAt(i).Key} {temp}");
+                        //file.WriteLine($"{timeDict.ElementAt(i).Key} {temp}");
+                }
+
+                double time = timeDict.ElementAt(timeDict.Count - 1).Value.TimeOfDay.TotalSeconds - timeDict.ElementAt(0).Value.TimeOfDay.TotalSeconds;
+
+                Console.WriteLine($"Time needed to download data : {time} s");
+
+            //      file.WriteLine($"Time needed to download data : {time} s\n");
+            // }
+
+            //}
 
             Console.ReadLine();
         }
@@ -119,6 +144,7 @@ namespace ConsoleApp1
 
         public static void DownloadFile(object objName)
         {
+            
             string name = (string)objName;
             Stopwatch stopwatch = new Stopwatch();
 
@@ -132,7 +158,7 @@ namespace ConsoleApp1
                 {
                     using (Stream responseStream = response.GetResponseStream())
                     {
-                        using (Stream fileStream = File.Create($@"C://Users/Bartek/Desktop/Appoutput/{name}"))
+                        using (Stream fileStream = File.Create($@"E:/Appoutput/{name}"))
                         {
                             byte[] buffer = new byte[10240];
                             int read;
@@ -145,10 +171,12 @@ namespace ConsoleApp1
                                 fileStream.Write(buffer, 0, read);
                             }
                             stopwatch.Stop();
-                            Console.WriteLine($"File {name} \nSize {fileStream.Position} bytes \nTime {stopwatch.ElapsedMilliseconds} ms");
-                            double bps = (double)fileStream.Position / ((double)stopwatch.ElapsedMilliseconds / 1000);
-                            Console.WriteLine($"Speed {Math.Round((bps / 1000 / 1000), 2)} Mbps");
-                            time += (double)stopwatch.ElapsedMilliseconds;
+                            timeDict.Add(name, DateTime.Now);
+                            Console.WriteLine($"Done {name}");
+                            //Console.WriteLine($"File {name} \nSize {fileStream.Position} bytes \nTime {stopwatch.ElapsedMilliseconds} ms");
+                            //double bps = (double)fileStream.Position / ((double)stopwatch.ElapsedMilliseconds / 1000);
+                            //Console.WriteLine($"Speed {Math.Round((bps / 1000 / 1000), 2)} Mbps");
+                            //time += (double)stopwatch.ElapsedMilliseconds;
                         }
                     }
                 }
@@ -157,7 +185,7 @@ namespace ConsoleApp1
             {
                 Console.Write(e.ToString());
             }
-            Console.WriteLine($"Using thread nr {Thread.CurrentThread.ManagedThreadId}\n");
+            //Console.WriteLine($"Using thread nr {Thread.CurrentThread.ManagedThreadId}\n");
 
         }
 
